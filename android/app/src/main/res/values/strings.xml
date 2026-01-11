@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sadhna Leveling</string>
+    <string name="title_activity_main">Sadhna Leveling</string>
+    <string name="package_name">com.sadhna.leveling</string>
+    <string name="custom_url_scheme">com.sadhna.leveling</string>
+</resources>
