@@ -1,220 +1,205 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useGame } from "../context/GameContext";
-import { Plus, X, AlertTriangle } from "lucide-react";
-import DecryptText from "../components/DecryptText"; // <--- IMPORT THIS
-
-const defaultTasks = [
-  { id: 1, title: "Mangala Aarti", points: 100, completed: false },
-  { id: 2, title: "16 Rounds Japa", points: 80, completed: false },
-  { id: 3, title: "Scripture Study", points: 50, completed: false },
-];
+import { Plus, X, Clock, Edit2, Trash2 } from "lucide-react";
+import DecryptText from "../components/DecryptText";
 
 export default function TasksPage() {
   const { addPoints } = useGame();
-
+  
   const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem("system_tasks");
-    return saved ? JSON.parse(saved) : defaultTasks;
+    const saved = localStorage.getItem("system_tasks_universal_v1");
+    return saved ? JSON.parse(saved) : [
+      { 
+        id: 1, 
+        title: "16 Rounds Japa", 
+        rank: "S", 
+        completed: false, 
+        selectedOption: null, 
+        options: [
+          { id: "o1", label: "12:00 PM", points: 100 },
+          { id: "o2", label: "04:00 PM", points: 80 },
+          { id: "o3", label: "07:00 PM", points: 60 },
+        ]
+      }
+    ];
   });
 
-  const [isAdding, setIsAdding] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskPoints, setNewTaskPoints] = useState(50);
+  const [activeModal, setActiveModal] = useState(null);
+  const [pendingTier, setPendingTier] = useState(null);
+  const [editingTask, setEditingTask] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem("system_tasks", JSON.stringify(tasks));
+    localStorage.setItem("system_tasks_universal_v1", JSON.stringify(tasks));
   }, [tasks]);
 
-  const completeTask = (id, points) => {
-    setTasks((prev) => prev.map((t) => t.id === id ? { ...t, completed: true } : t));
-    addPoints(points);
+  const handleTaskClick = (task, tierOption) => {
+    if (task.completed) return;
+    setPendingTier(tierOption);
+    setActiveModal(task);
   };
 
-  const addNewTask = (e) => {
+  const confirmCompletion = () => {
+    if (!activeModal || !pendingTier) return;
+    setTasks(prev => prev.map(t => t.id === activeModal.id ? { ...t, completed: true, selectedOption: pendingTier.id } : t));
+    addPoints(pendingTier.points);
+    setActiveModal(null);
+    setPendingTier(null);
+  };
+
+  const saveEditedTask = (e) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
-    const newTask = { id: Date.now(), title: newTaskTitle, points: parseInt(newTaskPoints), completed: false };
-    setTasks((prev) => [...prev, newTask]);
-    setNewTaskTitle("");
-    setNewTaskPoints(50);
-    setIsAdding(false);
-  };
-
-  const deleteTask = (id) => setTasks((prev) => prev.filter((t) => t.id !== id));
-
-  const getQuestRank = (pts) => {
-    if (pts >= 100) return "S";
-    if (pts >= 80) return "A";
-    if (pts >= 50) return "B";
-    if (pts >= 30) return "C";
-    return "E";
-  };
-
-  const getRankColor = (rank) => {
-    switch(rank) {
-      case "S": return "text-orange-500 text-glow"; 
-      case "A": return "text-red-500 text-glow";   
-      case "B": return "text-cyan-400 text-glow";   
-      default: return "text-slate-400";
+    if (tasks.find(t => t.id === editingTask.id)) {
+      setTasks(prev => prev.map(t => t.id === editingTask.id ? editingTask : t));
+    } else {
+      setTasks(prev => [...prev, { ...editingTask, id: Date.now() }]);
     }
+    setEditingTask(null);
+  };
+
+  const addDeadlineOption = () => {
+    const newOp = { id: `opt_${Date.now()}`, label: "00:00 AM", points: 50 };
+    setEditingTask({ ...editingTask, options: [...editingTask.options, newOp] });
   };
 
   return (
-    <div className="max-w-xl mx-auto px-5 pt-12 pb-32 min-h-screen bg-gradient-to-b from-black via-slate-900 to-black text-white">
-      
-      {/* HEADER */}
-      <div className="flex items-end justify-between mb-8 pl-4 border-l-4 border-cyan-500">
-        <div>
-          <h1 className="text-4xl font-bold tracking-widest text-cyan-400 text-glow animate-fade-in">
-            QUESTS
-          </h1>
-          <p className="text-cyan-500 text-xs tracking-[0.3em] mt-1 font-mono">
-             {/* APPLIED DECRYPT EFFECT HERE */}
-            <DecryptText text="ACTIVE OBJECTIVES" />
-          </p>
-        </div>
-
-        {/* ADD BUTTON */}
-        {!isAdding && (
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-500/20 text-cyan-400 p-2 transition-all group rounded-md shadow-md shadow-cyan-700/30"
-          >
-            <Plus size={20} className="group-hover:rotate-90 transition-transform" />
-          </button>
-        )}
-      </div>
-
-      {/* ADD FORM */}
-      <AnimatePresence>
-        {isAdding && (
-          <motion.form
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            onSubmit={addNewTask}
-            className="mb-8 bg-black/80 border border-cyan-500/50 p-4 relative shadow-[0_0_25px_rgba(6,182,212,0.25)] rounded-lg"
-          >
-            <button 
-              type="button" 
-              onClick={() => setIsAdding(false)}
-              className="absolute top-2 right-2 text-slate-500 hover:text-red-500 transition-colors"
-            >
-              <X size={16} />
-            </button>
-
-            <div className="flex items-center gap-2 mb-4 text-cyan-400 animate-pulse">
-              <AlertTriangle size={14} />
-              <span className="text-[10px] tracking-widest font-bold">
-                 <DecryptText text="NEW DIRECTIVE" />
-              </span>
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 overflow-y-auto pt-12 pb-32 px-5 scrollbar-cyan">
+        <div className="max-w-xl mx-auto">
+          
+          {/* HEADER */}
+          <div className="flex items-end justify-between mb-10 pl-4 border-l-4 border-cyan-500">
+            <div>
+              <h1 className="text-5xl font-extrabold tracking-widest text-cyan-400 text-glow animate-pulse">QUESTS</h1>
+              <p className="text-cyan-500 text-xs tracking-[0.3em] mt-1 font-mono uppercase">
+                <DecryptText text="UNIVERSAL DEADLINES ENABLED" />
+              </p>
             </div>
-
-            <div className="flex gap-4">
-              <input
-                type="text"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                className="flex-1 bg-transparent border-b border-slate-700 py-1 text-sm text-white focus:border-cyan-400 outline-none font-mono placeholder:text-slate-700"
-                placeholder="MISSION NAME"
-                autoFocus
-              />
-              <input
-                type="number"
-                value={newTaskPoints}
-                onChange={(e) => setNewTaskPoints(e.target.value)}
-                className="w-16 bg-transparent border-b border-slate-700 py-1 text-sm text-cyan-400 focus:border-cyan-400 outline-none font-mono text-center"
-              />
-            </div>
-
             <button 
-              type="submit"
-              className="w-full bg-cyan-900/30 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 py-2 text-[10px] tracking-[0.2em] mt-4 transition-all rounded-md"
+              onClick={() => setEditingTask({ title: "", rank: "E", completed: false, options: [{id: "1", label: "12:00 PM", points: 50}] })}
+              // UPDATED: Hover state is now brighter cyan-400
+              className="p-2 border border-cyan-500/30 bg-cyan-950/20 text-cyan-400 hover:bg-cyan-400 hover:text-black shadow-neon-glow hover:scale-110 transition-all"
             >
-              CONFIRM
+              <Plus size={22} />
             </button>
-          </motion.form>
-        )}
-      </AnimatePresence>
+          </div>
 
-      {/* QUEST TABLE */}
-      <div className="sys-table-container overflow-hidden rounded-xl shadow-lg border border-cyan-900 bg-gradient-to-tr from-black/60 to-slate-900/60 backdrop-blur-sm">
-        <table className="sys-table w-full border-collapse">
-          <thead>
-            <tr className="text-slate-500 text-[10px] font-mono tracking-widest uppercase border-b border-cyan-800">
-              <th className="w-12 text-center">RNK</th>
-              <th>OBJECTIVE</th>
-              <th className="w-20 text-right">RWD</th>
-              <th className="w-24 text-center">STS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tasks.map((task, i) => {
-              const rank = getQuestRank(task.points);
-              const rankColor = getRankColor(rank);
-
-              return (
-                <motion.tr
-                  key={task.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05, type: "spring", stiffness: 80 }}
-                  className={`group rounded-lg transition-all duration-300
-                    ${task.completed ? "opacity-50 grayscale" : "hover:bg-cyan-950/20 hover:scale-105"}`
-                  }
-                >
-                  {/* RANK */}
-                  <td className={`text-center font-bold text-lg ${rankColor}`}>
-                    {rank}
-                  </td>
-
-                  {/* OBJECTIVE */}
-                  <td className="relative">
-                    <span className={`font-medium tracking-wide ${task.completed ? "line-through text-slate-600" : "text-slate-200"}`}>
-                      {task.title}
-                    </span>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); deleteTask(task.id); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-slate-700 hover:text-red-500 transition-all"
-                    >
-                      <X size={14} />
-                    </button>
-                  </td>
-
-                  {/* REWARD */}
-                  <td className="text-right font-mono text-cyan-400">
-                    {task.points}XP
-                  </td>
-
-                  {/* STATUS */}
-                  <td className="text-center p-0">
-                    {!task.completed ? (
-                      <motion.button
-                        onClick={() => completeTask(task.id, task.points)}
-                        whileTap={{ scale: 0.9 }}
-                        className="w-full h-full py-3 text-[10px] tracking-wider text-cyan-400 hover:bg-cyan-500 hover:text-black transition-colors uppercase font-bold rounded-md"
+          {/* QUEST LIST */}
+          <div className="space-y-6">
+            {tasks.map((task) => (
+              <div
+                key={task.id}
+                className={`sys-card p-5 relative overflow-hidden transition-all duration-300 rounded-xl
+                  ${task.completed ? 'opacity-30 grayscale border-slate-800' : 'hover:border-cyan-400/50 border-cyan-900/50 shadow-neon-glow hover:scale-[1.02]'} bg-gradient-to-tr from-slate-900/60 to-black/50`}
+              >
+                <button onClick={() => setEditingTask(task)} className="absolute top-3 right-3 text-slate-700 hover:text-cyan-400 opacity-0 group-hover:opacity-100 transition-all z-10">
+                  <Edit2 size={16} />
+                </button>
+                <div className="flex items-center gap-4 mb-4">
+                  <div className={`w-12 h-12 flex items-center justify-center font-bold text-xl border rounded-full ${task.rank === 'S' ? 'border-orange-500 text-orange-500 text-glow' : 'border-cyan-500 text-cyan-400'}`}>
+                    {task.rank}
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-bold tracking-wide ${task.completed ? 'text-slate-500 line-through' : 'text-white'}`}>{task.title}</h3>
+                    <p className="text-[10px] text-cyan-800 font-mono tracking-widest mt-1 uppercase">OBJECTIVE_REWARDS_AVAILABLE</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-2 border-t border-cyan-900/20 pt-4">
+                  {task.options?.map(opt => {
+                    const isSel = task.completed && task.selectedOption === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        disabled={task.completed}
+                        onClick={() => handleTaskClick(task, opt)}
+                        // UPDATED: Selected state is now bg-cyan-400 (Brighter)
+                        className={`flex items-center justify-between px-4 py-3 border text-xs tracking-wider transition-all rounded-md
+                          ${isSel 
+                            ? "bg-cyan-400 text-black border-cyan-400 shadow-neon-glow font-bold" 
+                            : task.completed 
+                              ? "opacity-20 border-slate-900" 
+                              : "bg-slate-950 border-slate-800 text-slate-400 hover:border-cyan-400 hover:text-cyan-400"}`}
                       >
-                        CLEAR
-                      </motion.button>
-                    ) : (
-                      <span className="text-[10px] tracking-wider text-slate-500">
-                        DONE
-                      </span>
-                    )}
-                  </td>
-                </motion.tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                        <div className="flex items-center gap-2"><Clock size={14}/><span>{opt.label}</span></div>
+                        <span className={isSel ? "text-black" : "text-cyan-400 font-bold"}>+{opt.points} XP</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
 
-      {tasks.length === 0 && (
-        <div className="mt-8 text-center text-slate-600 text-xs tracking-[0.2em]">
-          NO ACTIVE MISSIONS
+          {/* EDIT MODAL */}
+          {editingTask && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/95 backdrop-blur-lg">
+              <form onSubmit={saveEditedTask} className="w-full max-w-sm bg-[#050914] border border-cyan-500 p-2 shadow-neon-glow rounded-xl overflow-y-auto max-h-[90vh]">
+                <div className="bg-[#080c16] p-6 space-y-6">
+                  <div className="flex justify-between items-center border-b border-cyan-900 pb-3">
+                    <span className="text-sm font-bold tracking-[.3em] text-cyan-400">QUEST_CONFIG</span>
+                    <X className="text-slate-500 cursor-pointer hover:text-cyan-400" onClick={() => setEditingTask(null)} />
+                  </div>
+                  <input value={editingTask.title} onChange={e => setEditingTask({...editingTask, title: e.target.value})} placeholder="MISSION TITLE" className="w-full bg-slate-950 border-b border-cyan-900 p-3 text-white outline-none focus:border-cyan-400 font-mono" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <select value={editingTask.rank} onChange={e => setEditingTask({...editingTask, rank: e.target.value})} className="bg-slate-950 border-b border-cyan-900 text-cyan-400 p-2 font-mono text-xs">
+                      {["S", "A", "B", "C", "D", "E"].map(r => <option key={r} value={r}>RANK {r}</option>)}
+                    </select>
+                    <span className="text-[10px] text-slate-500 self-center uppercase tracking-widest">Rank Difficulty</span>
+                  </div>
+                  <div className="space-y-3">
+                    <p className="text-[10px] text-cyan-600 font-bold uppercase tracking-widest">Deadline Tiers</p>
+                    {editingTask.options.map((opt, idx) => (
+                      <div key={opt.id} className="flex gap-2">
+                        <input value={opt.label} onChange={e => {
+                          const newOps = [...editingTask.options];
+                          newOps[idx].label = e.target.value;
+                          setEditingTask({...editingTask, options: newOps});
+                        }} className="flex-1 bg-slate-950 border border-cyan-900/30 p-2 text-xs text-white" />
+                        <input type="number" value={opt.points} onChange={e => {
+                          const newOps = [...editingTask.options];
+                          newOps[idx].points = parseInt(e.target.value);
+                          setEditingTask({...editingTask, options: newOps});
+                        }} className="w-16 bg-slate-950 border border-cyan-900/30 p-2 text-xs text-cyan-400 text-center" />
+                        <button type="button" onClick={() => setEditingTask({...editingTask, options: editingTask.options.filter((_, i) => i !== idx)})} className="text-red-900 hover:text-red-500"><Trash2 size={14}/></button>
+                      </div>
+                    ))}
+                    <button type="button" onClick={addDeadlineOption} className="w-full py-2 border border-dashed border-cyan-900 text-cyan-900 hover:text-cyan-400 text-[10px] uppercase font-bold">+ Add Tier</button>
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    {/* UPDATED: INITIALIZE button is now bg-cyan-400 */}
+                    <button type="submit" className="flex-1 py-4 bg-cyan-400 text-black font-black text-xs tracking-widest hover:bg-white shadow-neon-glow">INITIALIZE</button>
+                    <button type="button" onClick={() => { if(confirm("Terminate Mission?")) setTasks(prev => prev.filter(t => t.id !== editingTask.id)); setEditingTask(null); }} className="px-4 border border-red-900 text-red-700 text-[10px] hover:animate-pulse">SCRAP</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* COMPLETION MODAL */}
+          {activeModal && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+              <div className="w-full max-w-sm bg-[#050914] border border-cyan-500 p-1 shadow-neon-glow rounded-xl">
+                <div className="bg-[#080c16] p-8 text-center">
+                  <div className="flex items-center gap-3 mb-6 border-b border-cyan-900/50 pb-4">
+                    <div className="w-10 h-10 border border-white/20 flex items-center justify-center bg-white/5 rounded-full"><span className="text-xl font-bold text-white">!</span></div>
+                    <div className="text-sm font-bold text-white tracking-[0.3em] uppercase flex-1 text-left">NOTIFICATION</div>
+                  </div>
+                  <p className="text-slate-400 text-sm mb-2 uppercase">Requirements fulfilled for:</p>
+                  <p className="text-xl text-white font-bold text-glow mb-6">[{activeModal.title}]</p>
+                  <div className="bg-cyan-950/20 p-5 border border-cyan-900 mb-8 rounded-lg">
+                    <p className="text-[10px] text-cyan-500 uppercase tracking-widest mb-1">XP_ACQUIRED</p>
+                    <p className="text-4xl font-bold text-cyan-400">+{pendingTier?.points} XP</p>
+                  </div>
+                  <div className="flex gap-4">
+                    {/* UPDATED: ACCEPT button is now bg-cyan-400 */}
+                    <button onClick={confirmCompletion} className="flex-1 py-4 bg-cyan-400 text-black font-black tracking-widest hover:bg-white shadow-neon-glow">ACCEPT</button>
+                    <button onClick={() => setActiveModal(null)} className="flex-1 py-4 border border-slate-700 text-slate-500 font-bold uppercase tracking-widest hover:bg-slate-800">DECLINE</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
