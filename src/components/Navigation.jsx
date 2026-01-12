@@ -31,4 +31,4 @@ const NavItem = ({ to, icon, label }) => (
     {icon}
     <span className="text-[9px] font-bold tracking-widest uppercase">{label}</span>
   </NavLink>
-);
+); 
