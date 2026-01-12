@@ -11,7 +11,7 @@ import TasksPage from './pages/TasksPage';
 import SystemBackground from './components/SystemBackground';
 
 const BackButtonHandler = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
   const location = useLocation();
 
   useEffect(() => {
