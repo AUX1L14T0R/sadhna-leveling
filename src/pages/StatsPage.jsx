@@ -1,6 +1,6 @@
 import { Activity } from "lucide-react";
 import { useGame } from "../context/GameContext";
-import DecryptText from "../components/DecryptText"; // <--- IMPORT THIS
+import DecryptText from "../components/DecryptText";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from "recharts";
@@ -9,128 +9,158 @@ export default function StatsPage() {
   const { xp, level, rank, getMonthlyData } = useGame();
   const monthlyData = getMonthlyData();
 
-  // Calculate progress to next level
-  const nextLevelXp = level * 100;
-  const progressPercent = Math.min((xp / nextLevelXp) * 100, 100).toFixed(1);
+  // --- LOGIC UPDATE: VISUALIZING PROGRESSIVE XP ---
+  // We need to determine the specific start and end points of the current level
+  // to show the correct percentage on the bar.
+
+  let lvlIterator = 1;
+  let costIterator = 1000; // Starting cost (Lvl 1 -> 2)
+  let accumulatedXp = 0;   // XP used by all previous levels combined
+
+  // Re-run the loop up to the CURRENT level to find our "Floor" XP
+  while (lvlIterator < level) {
+    accumulatedXp += costIterator;
+    costIterator += 1500; // Increase gap by 1500 each time
+    lvlIterator++;
+  }
+
+  // "xpInCurrentLevel": How much XP gained SINCE the last level up
+  const xpInCurrentLevel = xp - accumulatedXp;
+
+  // "xpRequiredForNextLevel": The specific cost to clear THIS level
+  const xpRequiredForNextLevel = costIterator;
+
+  // Percentage for the bar
+  const progressPercent = Math.min((xpInCurrentLevel / xpRequiredForNextLevel) * 100, 100).toFixed(1);
+  // ------------------------------------------------
 
   return (
-    <div className="max-w-xl mx-auto px-5 pt-12 pb-32">
-      
-      {/* TITLE */}
-      <div className="mb-8 pl-4 border-l-4 border-cyan-500">
-        <h1 className="text-3xl font-bold text-white tracking-widest text-glow">
+    <div className="h-full flex flex-col pt-8 pb-10 px-5 overflow-hidden">
+
+      {/* 1. FIXED HEADER */}
+      <div className="max-w-xl mx-auto w-full mb-8 pl-4 border-l-4 border-cyan-500 shrink-0">
+        <h1 className="text-3xl font-bold text-white tracking-widest text-glow uppercase">
           STATUS
         </h1>
         <p className="text-cyan-500 text-xs tracking-[0.3em] mt-1">
-           {/* APPLIED DECRYPT EFFECT HERE */}
           <DecryptText text="PLAYER INFORMATION" />
         </p>
       </div>
 
-      {/* THE SYSTEM TABLE: ATTRIBUTES */}
-      <div className="sys-table-container mb-8">
-        <table className="sys-table">
-          <thead>
-            <tr>
-              <th width="40%">ATTRIBUTE</th>
-              <th>VALUE</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="text-cyan-400 font-bold">NAME</td>
-              <td>PLAYER</td>
-            </tr>
-            <tr>
-              <td className="text-cyan-400 font-bold">JOB</td>
-              <td>SADHAKA</td>
-            </tr>
-            <tr>
-              <td className="text-cyan-400 font-bold">TITLE</td>
-              <td>WOLF SLAYER (None)</td>
-            </tr>
-            <tr>
-              <td className="text-cyan-400 font-bold">LEVEL</td>
-              <td className="text-xl text-white font-bold">{level}</td>
-            </tr>
-            <tr>
-              <td className="text-cyan-400 font-bold">RANK</td>
-              <td className="text-xl text-cyan-400 font-bold text-glow">{rank}</td>
-            </tr>
-            <tr>
-              <td className="text-cyan-400 font-bold">EXPERIENCE</td>
-              <td>
-                <div className="flex items-center gap-3">
-                  <span>{xp} / {nextLevelXp}</span>
-                  <div className="h-1.5 w-24 bg-slate-800 relative overflow-hidden">
-                    <div 
-                      style={{ width: `${progressPercent}%` }} 
-                      className="absolute inset-0 bg-cyan-500 shadow-[0_0_10px_#06b6d4]" 
-                    />
+      {/* 2. SCROLLABLE CONTENT */}
+      <div className="flex-1 overflow-y-auto w-full max-w-xl mx-auto scrollbar-cyan pr-2">
+
+        {/* ATTRIBUTE TABLE */}
+        <div className="sys-table-container mb-8 rounded-lg overflow-hidden border border-cyan-900/30 bg-slate-900/40">
+          <table className="sys-table w-full">
+            <thead>
+              <tr className="bg-cyan-950/20">
+                <th width="40%" className="text-left p-3 text-[10px] text-cyan-500">ATTRIBUTE</th>
+                <th className="text-left p-3 text-[10px] text-cyan-500">VALUE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-slate-800/50">
+                <td className="p-3 text-cyan-400 font-bold text-xs">NAME</td>
+                <td className="p-3 text-white text-xs">PLAYER</td>
+              </tr>
+              <tr className="border-b border-slate-800/50">
+                <td className="p-3 text-cyan-400 font-bold text-xs">JOB</td>
+                <td className="p-3 text-white text-xs">SADHAKA</td>
+              </tr>
+              <tr className="border-b border-slate-800/50">
+                <td className="p-3 text-cyan-400 font-bold text-xs">LEVEL</td>
+                <td className="p-3 text-xl text-white font-bold">{level}</td>
+              </tr>
+              <tr className="border-b border-slate-800/50">
+                <td className="p-3 text-cyan-400 font-bold text-xs">RANK</td>
+                <td className="p-3 text-xl text-cyan-400 font-bold text-glow">{rank}</td>
+              </tr>
+              <tr>
+                <td className="p-3 text-cyan-400 font-bold text-xs">EXPERIENCE</td>
+                <td className="p-3">
+                  <div className="flex flex-col gap-2">
+                    {/* XP Numbers */}
+                    <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                      <span>{xpInCurrentLevel} / {xpRequiredForNextLevel}</span>
+
+                    </div>
                   </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                </td>
+              </tr>
+              <tr className="border-b border-slate-800/50">
+                <td className="p-3 text-cyan-400 font-bold text-xs">Progress percentage</td>
+                <td className="p-3 text-xl text-cyan-400 font-bold text-glow">{progressPercent}%</td>
+              </tr>
+              {/* Progress Bar */}
+              <div className="h-1.5 w-full bg-slate-800 relative overflow-hidden rounded-full">
+                <div
+                  style={{ width: `${progressPercent}%` }}
+                  className="absolute inset-0 bg-cyan-500 shadow-[0_0_10px_#06b6d4] transition-all duration-500"
+                />
+              </div>
 
-      {/* GRAPH CARD */}
-      <div className="sys-card p-4">
-        <div className="flex items-center justify-between mb-4 border-b border-cyan-500/20 pb-2">
-          <span className="text-xs text-cyan-400 tracking-widest font-bold">
-             <DecryptText text="GROWTH CHART" />
-          </span>
-          <Activity size={14} className="text-cyan-400" />
+            </tbody>
+          </table>
         </div>
 
-        <div style={{ width: "100%", height: 200 }}>
-          <ResponsiveContainer>
-            <LineChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis 
-                dataKey="day" 
-                tick={{ fill: "#64748b", fontSize: 10, fontFamily: 'Jura' }} 
-                axisLine={false} tickLine={false} 
-              />
-              <YAxis 
-                tick={{ fill: "#64748b", fontSize: 10, fontFamily: 'Jura' }} 
-                axisLine={false} tickLine={false} width={30} 
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "rgba(2, 6, 23, 0.9)",
-                  border: "1px solid #06b6d4",
-                  color: "#fff",
-                  fontSize: "12px",
-                  fontFamily: "Jura"
-                }}
-              />
-              <Line 
-                type="step" 
-                dataKey="xp" 
-                stroke="#22d3ee" 
-                strokeWidth={2} 
-                dot={false} 
-                activeDot={{ r: 4, fill: "#fff", stroke: "#22d3ee" }} 
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+        {/* GRAPH CARD */}
+        <div className="sys-card p-4 rounded-lg bg-slate-900/40 border border-cyan-900/30 mb-8">
+          <div className="flex items-center justify-between mb-4 border-b border-cyan-500/20 pb-2">
+            <span className="text-[10px] text-cyan-400 tracking-widest font-bold uppercase">
+              <DecryptText text="GROWTH CHART" />
+            </span>
+            <Activity size={14} className="text-cyan-400" />
+          </div>
 
-      {/* RESET BUTTON */}
-      <button 
-        onClick={() => {
-          if(confirm("SYSTEM WARNING: This will wipe all player data. Confirm?")) {
-            localStorage.clear();
-            window.location.reload();
-          }
-        }}
-        className="mt-8 w-full border border-red-900/50 text-red-700 py-3 text-xs tracking-widest hover:bg-red-950/30 hover:text-red-500 hover:border-red-500 transition opacity-50 hover:opacity-100"
-      >
-        ⚠ FACTORY RESET SYSTEM
-      </button>
+          <div style={{ width: "100%", height: 180 }}>
+            <ResponsiveContainer>
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fill: "#64748b", fontSize: 10 }}
+                  axisLine={false} tickLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "#64748b", fontSize: 10 }}
+                  axisLine={false} tickLine={false} width={25}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "rgba(2, 6, 23, 0.95)",
+                    border: "1px solid #06b6d4",
+                    color: "#fff",
+                    fontSize: "10px",
+                    borderRadius: "4px"
+                  }}
+                />
+                <Line
+                  type="step"
+                  dataKey="xp"
+                  stroke="#22d3ee"
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4, fill: "#fff", stroke: "#22d3ee" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* RESET BUTTON */}
+        <button
+          onClick={() => {
+            if (confirm("SYSTEM WARNING: This will wipe all player data. Confirm?")) {
+              localStorage.clear();
+              window.location.reload();
+            }
+          }}
+          className="w-full border border-red-900/30 text-red-900 py-3 text-[10px] font-bold tracking-[0.3em] hover:bg-red-950/20 hover:text-red-500 hover:border-red-500 transition-all opacity-60 hover:opacity-100 uppercase mb-8"
+        >
+          ⚠ Factory Reset System
+        </button>
+      </div>
     </div>
   );
 }
