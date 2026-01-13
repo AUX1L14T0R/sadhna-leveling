@@ -9,30 +9,23 @@ export default function StatsPage() {
   const { xp, level, rank, getMonthlyData } = useGame();
   const monthlyData = getMonthlyData();
 
-  // --- LOGIC UPDATE: VISUALIZING PROGRESSIVE XP ---
-  // We need to determine the specific start and end points of the current level
-  // to show the correct percentage on the bar.
-
+  // --- LOGIC: PROGRESSIVE XP CALCULATION ---
+  // Re-calculate the XP floor for the current level to get accurate %
   let lvlIterator = 1;
-  let costIterator = 1000; // Starting cost (Lvl 1 -> 2)
-  let accumulatedXp = 0;   // XP used by all previous levels combined
+  let costIterator = 1000; 
+  let accumulatedXp = 0;   
 
-  // Re-run the loop up to the CURRENT level to find our "Floor" XP
+  // Loop to find the base XP of the current level
   while (lvlIterator < level) {
     accumulatedXp += costIterator;
-    costIterator += 1500; // Increase gap by 1500 each time
+    costIterator += 1500; 
     lvlIterator++;
   }
 
-  // "xpInCurrentLevel": How much XP gained SINCE the last level up
   const xpInCurrentLevel = xp - accumulatedXp;
-
-  // "xpRequiredForNextLevel": The specific cost to clear THIS level
   const xpRequiredForNextLevel = costIterator;
-
-  // Percentage for the bar
   const progressPercent = Math.min((xpInCurrentLevel / xpRequiredForNextLevel) * 100, 100).toFixed(1);
-  // ------------------------------------------------
+  // ----------------------------------------
 
   return (
     <div className="h-full flex flex-col pt-8 pb-10 px-5 overflow-hidden">
@@ -60,6 +53,7 @@ export default function StatsPage() {
               </tr>
             </thead>
             <tbody>
+              {/* STANDARD ROWS */}
               <tr className="border-b border-slate-800/50">
                 <td className="p-3 text-cyan-400 font-bold text-xs">NAME</td>
                 <td className="p-3 text-white text-xs">PLAYER</td>
@@ -76,29 +70,27 @@ export default function StatsPage() {
                 <td className="p-3 text-cyan-400 font-bold text-xs">RANK</td>
                 <td className="p-3 text-xl text-cyan-400 font-bold text-glow">{rank}</td>
               </tr>
+              
+              {/* FIXED ROW: Progress Bar is now INSIDE the 'td' */}
               <tr>
-                <td className="p-3 text-cyan-400 font-bold text-xs">EXPERIENCE</td>
+                <td className="p-3 text-cyan-400 font-bold text-xs align-top pt-4">EXPERIENCE</td>
                 <td className="p-3">
                   <div className="flex flex-col gap-2">
                     {/* XP Numbers */}
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                       <span>{xpInCurrentLevel} / {xpRequiredForNextLevel}</span>
-
+                      <span className="text-cyan-400"> Progress={progressPercent}%</span>
+                    </div>
+                    {/* Progress Bar Container */}
+                    <div className="h-1.5 w-full bg-slate-800 relative overflow-hidden rounded-full">
+                      <div
+                        style={{ width: `${progressPercent}%` }}
+                        className="absolute inset-0 bg-cyan-500 shadow-[0_0_10px_#06b6d4] transition-all duration-500"
+                      />
                     </div>
                   </div>
                 </td>
               </tr>
-              <tr className="border-b border-slate-800/50">
-                <td className="p-3 text-cyan-400 font-bold text-xs">Progress percentage</td>
-                <td className="p-3 text-xl text-cyan-400 font-bold text-glow">{progressPercent}%</td>
-              </tr>
-              {/* Progress Bar */}
-              <div className="h-1.5 w-full bg-slate-800 relative overflow-hidden rounded-full">
-                <div
-                  style={{ width: `${progressPercent}%` }}
-                  className="absolute inset-0 bg-cyan-500 shadow-[0_0_10px_#06b6d4] transition-all duration-500"
-                />
-              </div>
 
             </tbody>
           </table>
@@ -163,4 +155,4 @@ export default function StatsPage() {
       </div>
     </div>
   );
-}
+}  
