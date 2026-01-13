@@ -21,7 +21,7 @@ export const nectarQualities = [
   { id: 17, verse: 3, text: "Giving up Bad Company", type: "adopt", points: 400 },
   { id: 18, verse: 3, text: "Following Prev. Acharyas and preach", type: "adopt", points: 700 },
   // Verse 4
-  { id: 19, verse: 4, text: " Extra Service ", type: "adopt, points: 500 },
+  { id: 19, verse: 4, text: " Extra Service ", type: "adopt", points: 500 },
   { id: 20, verse: 4, text: "1 hour academics", type: "adopt", points: 800 },
   { id: 21, verse: 4, text: "Sloka with meaning", type: "adopt", points: 500 },
   { id: 22, verse: 4, text:  "1.5 hour DSA", type: "adopt", points: 800 },
