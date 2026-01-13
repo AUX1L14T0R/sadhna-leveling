@@ -3,13 +3,26 @@ import { createContext, useContext, useEffect, useState } from "react";
 const GameContext = createContext();
 
 export function GameProvider({ children }) {
+  // 1. DATA VERSION CONTROL (Fixes "Starting at Grade E" bug)
+  // If we don't clear old data, 5000 XP from the old system breaks the new math.
+  useEffect(() => {
+    const version = localStorage.getItem("system_version");
+    if (version !== "v2_progressive") {
+      console.log("System Update: Resetting stats for new progressive logic...");
+      localStorage.clear();
+      localStorage.setItem("system_version", "v2_progressive");
+      window.location.reload();
+    }
+  }, []);
+
   const [xp, setXp] = useState(() => {
     const saved = localStorage.getItem("system_xp");
-    return saved ? parseInt(saved, 10) : 0;
+    return saved && !isNaN(saved) ? parseInt(saved, 10) : 0;
   });
 
-  const [level, setLevel] = useState(1);
-  const [rank, setRank] = useState("E");
+  // Start at Level 0 as requested
+  const [level, setLevel] = useState(0); 
+  const [rank, setRank] = useState("F");
   
   const [dailyXpLog, setDailyXpLog] = useState(() => {
     const saved = localStorage.getItem("system_log");
@@ -17,16 +30,42 @@ export function GameProvider({ children }) {
   });
 
   useEffect(() => {
-    // Rank Logic
-    setLevel(Math.floor(xp / 100) + 1);
-    if (xp >= 5000) setRank("S");
-    else if (xp >= 2000) setRank("A");
-    else if (xp >= 1200) setRank("B");
-    else if (xp >= 600) setRank("C");
-    else if (xp >= 200) setRank("D");
-    else setRank("E");
+    // --- NEW LEVEL LOGIC (Starts at 0) ---
+    // Lvl 0 -> 1: Needs 1000 XP
+    // Lvl 1 -> 2: Needs 2500 XP (+1500 increase)
+    // Lvl 2 -> 3: Needs 4000 XP (+1500 increase)
 
+    let currentLvl = 0;      // Start at Level 0 (Rank F)
+    let cost = 1000;         // Cost to clear Level 0
+    let accumulated = 0;     // Total XP spent to reach current level
+
+    // While we have enough XP to pay for the next level...
+    while (xp >= accumulated + cost) {
+      accumulated += cost;   // Pay the cost
+      currentLvl++;          // Level Up
+      cost += 1500;          // Next level is harder
+    }
+
+    setLevel(currentLvl);
     localStorage.setItem("system_xp", xp);
+
+    // --- NEW RANK LOGIC (Your Exact Request) ---
+    if (currentLvl >= 200) setRank("SSS");
+    else if (currentLvl >= 150) setRank("SS");
+    else if (currentLvl >= 120) setRank("S");
+    else if (currentLvl >= 100) setRank("A+");
+    else if (currentLvl >= 85) setRank("A");
+    else if (currentLvl >= 70) setRank("B+");
+    else if (currentLvl >= 60) setRank("B");
+    else if (currentLvl >= 49) setRank("C+");
+    else if (currentLvl >= 39) setRank("C");
+    else if (currentLvl >= 32) setRank("D+");
+    else if (currentLvl >= 25) setRank("D");
+    else if (currentLvl >= 18) setRank("E+");
+    else if (currentLvl >= 12) setRank("E");
+    else if (currentLvl >= 5) setRank("F+");
+    else setRank("F"); // Level 0-4 is F
+
   }, [xp]);
 
   useEffect(() => {
@@ -35,7 +74,9 @@ export function GameProvider({ children }) {
 
   const addPoints = (amount) => {
     if (!amount) return;
-    setXp((prev) => prev + amount);
+    // Prevent XP from going below 0 to avoid calculation errors
+    setXp((prev) => Math.max(0, prev + amount));
+    
     const today = new Date().toISOString().slice(0, 10);
     setDailyXpLog((prev) => ({
       ...prev,
