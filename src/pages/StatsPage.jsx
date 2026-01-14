@@ -1,4 +1,5 @@
-import { Activity } from "lucide-react";
+import { useState } from "react"; // Added useState for the modal
+import { Activity, Download, Upload, Copy, Check } from "lucide-react"; // Added icons
 import { useGame } from "../context/GameContext";
 import DecryptText from "../components/DecryptText";
 import {
@@ -10,28 +11,66 @@ export default function StatsPage() {
   const monthlyData = getMonthlyData();
 
   // --- LOGIC: PROGRESSIVE XP CALCULATION ---
-  // 1. Calculate the XP floor for the current level
-  let lvlIterator = 0;       // Start matching at Level 0
-  let costIterator = 1000;   // Cost to clear Level 0
-  let accumulatedXp = 0;     // Total XP required for previous levels
+  let lvlIterator = 0;       
+  let costIterator = 1000;   
+  let accumulatedXp = 0;     
 
-  // Loop until we reach the CURRENT level to find the "Base XP"
   while (lvlIterator < level) {
     accumulatedXp += costIterator;
-    costIterator += 1500;    // Increase difficulty
+    costIterator += 1500;    
     lvlIterator++;
   }
 
-  // 2. XP gained ONLY within the current level
   const xpInCurrentLevel = Math.max(0, xp - accumulatedXp);
-  
-  // 3. Total XP needed to finish THIS specific level
   const xpRequiredForNextLevel = costIterator;
-
-  // 4. Calculate Percentage
   const rawPercent = (xpInCurrentLevel / xpRequiredForNextLevel) * 100;
   const progressPercent = Math.min(Math.max(rawPercent, 0), 100).toFixed(1);
-  // ------------------------------------------------------------------
+  // ----------------------------------------
+
+  // --- BACKUP SYSTEM LOGIC ---
+  const [showImport, setShowImport] = useState(false);
+  const [importString, setImportString] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleExport = () => {
+    // 1. Gather all system data keys
+    const backup = {
+      xp: localStorage.getItem("system_xp"),
+      log: localStorage.getItem("system_log"),
+      tasks: localStorage.getItem("system_tasks_data"),
+      qualities: localStorage.getItem("daily_qualities"),
+      version: localStorage.getItem("system_version")
+    };
+    
+    // 2. Convert to string and copy to clipboard
+    const dataString = btoa(JSON.stringify(backup)); // Encoded to look like "System Code"
+    navigator.clipboard.writeText(dataString).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+      alert("SYSTEM DATA COPIED TO CLIPBOARD.\n\nSave this code safely before uninstalling!");
+    });
+  };
+
+  const handleImport = () => {
+    try {
+      const decoded = atob(importString);
+      const data = JSON.parse(decoded);
+
+      if (confirm("WARNING: Overwrite current data with this backup?")) {
+        if (data.xp) localStorage.setItem("system_xp", data.xp);
+        if (data.log) localStorage.setItem("system_log", data.log);
+        if (data.tasks) localStorage.setItem("system_tasks_data", data.tasks);
+        if (data.qualities) localStorage.setItem("daily_qualities", data.qualities);
+        if (data.version) localStorage.setItem("system_version", data.version);
+        
+        alert("SYSTEM RESTORE SUCCESSFUL. REBOOTING...");
+        window.location.reload();
+      }
+    } catch (e) {
+      alert("ERROR: INVALID SYSTEM CODE.");
+    }
+  };
+  // ---------------------------
 
   return (
     <div className="h-full flex flex-col pt-8 pb-10 px-5 overflow-hidden">
@@ -97,7 +136,6 @@ export default function StatsPage() {
                   </div>
                 </td>
               </tr>
-
             </tbody>
           </table>
         </div>
@@ -116,7 +154,7 @@ export default function StatsPage() {
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis
-                  dataKey="day"
+                  dataKey="label"
                   tick={{ fill: "#64748b", fontSize: 10 }}
                   axisLine={false} tickLine={false}
                 />
@@ -146,15 +184,59 @@ export default function StatsPage() {
           </div>
         </div>
 
-        {/* RESET BUTTON */}
+        {/* --- DATA MANAGEMENT SECTION --- */}
+        <div className="mb-8 space-y-3">
+          <p className="text-[10px] text-cyan-600 font-bold uppercase tracking-widest pl-1">Data Management</p>
+          
+          <div className="flex gap-3">
+            {/* EXPORT BUTTON */}
+            <button 
+              onClick={handleExport}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-cyan-950/30 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold tracking-widest hover:bg-cyan-400 hover:text-black transition-all"
+            >
+              {copySuccess ? <Check size={14} /> : <Download size={14} />}
+              {copySuccess ? "COPIED!" : "EXPORT DATA"}
+            </button>
+
+            {/* IMPORT BUTTON */}
+            <button 
+              onClick={() => setShowImport(!showImport)}
+              className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900/50 border border-slate-700 text-slate-400 text-[10px] font-bold tracking-widest hover:bg-slate-800 hover:text-white transition-all"
+            >
+              <Upload size={14} />
+              IMPORT DATA
+            </button>
+          </div>
+
+          {/* IMPORT INPUT FIELD (Hidden by default) */}
+          {showImport && (
+            <div className="animate-fade-in space-y-2 bg-black/50 p-3 rounded border border-slate-800">
+              <p className="text-[10px] text-slate-500 uppercase">Paste System Code Below:</p>
+              <textarea 
+                value={importString}
+                onChange={(e) => setImportString(e.target.value)}
+                className="w-full h-20 bg-slate-950 border border-cyan-900/50 text-cyan-400 text-[10px] font-mono p-2 focus:outline-none focus:border-cyan-400 rounded"
+                placeholder="Paste code here..."
+              />
+              <button 
+                onClick={handleImport}
+                className="w-full py-2 bg-cyan-600 text-black text-[10px] font-bold tracking-widest hover:bg-white"
+              >
+                CONFIRM RESTORE
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* FACTORY RESET BUTTON */}
         <button
           onClick={() => {
-            if (confirm("SYSTEM WARNING: This will wipe all player data. Confirm?")) {
+            if (confirm("SYSTEM WARNING: This will wipe all player data permanently. Confirm?")) {
               localStorage.clear();
               window.location.reload();
             }
           }}
-          className="w-full border border-red-900/30 text-red-900 py-3 text-[10px] font-bold tracking-[0.3em] hover:bg-red-950/20 hover:text-red-500 hover:border-red-500 transition-all opacity-60 hover:opacity-100 uppercase mb-8"
+          className="w-full border border-red-900/30 text-red-900 py-3 text-[10px] font-bold tracking-[0.3em] hover:bg-red-950/20 hover:text-red-500 hover:border-red-500 transition-all opacity-40 hover:opacity-100 uppercase mb-8"
         >
           ⚠ Factory Reset System
         </button>
