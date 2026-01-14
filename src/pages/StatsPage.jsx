@@ -124,7 +124,7 @@ export default function StatsPage() {
                     {/* XP Numbers */}
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                       <span>{xpInCurrentLevel} / {xpRequiredForNextLevel}</span>
-                      <span className="text-cyan-400">{progressPercent}%</span>
+                      <span className="text-cyan-400"> PP {progressPercent}%</span>
                     </div>
                     {/* Progress Bar */}
                     <div className="h-1.5 w-full bg-slate-800 relative overflow-hidden rounded-full">
