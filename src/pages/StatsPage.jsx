@@ -1,5 +1,5 @@
-import { useState } from "react"; // Added useState for the modal
-import { Activity, Download, Upload, Copy, Check } from "lucide-react"; // Added icons
+import { useState } from "react";
+import { Activity, Download, Upload, Copy, Check } from "lucide-react";
 import { useGame } from "../context/GameContext";
 import DecryptText from "../components/DecryptText";
 import {
@@ -33,7 +33,6 @@ export default function StatsPage() {
   const [copySuccess, setCopySuccess] = useState(false);
 
   const handleExport = () => {
-    // 1. Gather all system data keys
     const backup = {
       xp: localStorage.getItem("system_xp"),
       log: localStorage.getItem("system_log"),
@@ -42,12 +41,11 @@ export default function StatsPage() {
       version: localStorage.getItem("system_version")
     };
     
-    // 2. Convert to string and copy to clipboard
-    const dataString = btoa(JSON.stringify(backup)); // Encoded to look like "System Code"
+    const dataString = btoa(JSON.stringify(backup)); 
     navigator.clipboard.writeText(dataString).then(() => {
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
-      alert("SYSTEM DATA COPIED TO CLIPBOARD.\n\nSave this code safely before uninstalling!");
+      alert("SYSTEM DATA COPIED TO CLIPBOARD.");
     });
   };
 
@@ -124,7 +122,7 @@ export default function StatsPage() {
                     {/* XP Numbers */}
                     <div className="flex justify-between text-[10px] text-slate-400 font-mono">
                       <span>{xpInCurrentLevel} / {xpRequiredForNextLevel}</span>
-                      <span className="text-cyan-400"> PP {progressPercent}%</span>
+                      <span className="text-cyan-400">{progressPercent}%</span>
                     </div>
                     {/* Progress Bar */}
                     <div className="h-1.5 w-full bg-slate-800 relative overflow-hidden rounded-full">
@@ -153,11 +151,16 @@ export default function StatsPage() {
             <ResponsiveContainer>
               <LineChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                
+                {/* FIX: Ensure "label" is used and avoid overlap */}
                 <XAxis
                   dataKey="label"
                   tick={{ fill: "#64748b", fontSize: 10 }}
-                  axisLine={false} tickLine={false}
+                  axisLine={false} 
+                  tickLine={false}
+                  minTickGap={15} 
                 />
+                
                 <YAxis
                   tick={{ fill: "#64748b", fontSize: 10 }}
                   axisLine={false} tickLine={false} width={25}
@@ -184,12 +187,11 @@ export default function StatsPage() {
           </div>
         </div>
 
-        {/* --- DATA MANAGEMENT SECTION --- */}
+        {/* DATA MANAGEMENT */}
         <div className="mb-8 space-y-3">
           <p className="text-[10px] text-cyan-600 font-bold uppercase tracking-widest pl-1">Data Management</p>
           
           <div className="flex gap-3">
-            {/* EXPORT BUTTON */}
             <button 
               onClick={handleExport}
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-cyan-950/30 border border-cyan-500/30 text-cyan-400 text-[10px] font-bold tracking-widest hover:bg-cyan-400 hover:text-black transition-all"
@@ -198,7 +200,6 @@ export default function StatsPage() {
               {copySuccess ? "COPIED!" : "EXPORT DATA"}
             </button>
 
-            {/* IMPORT BUTTON */}
             <button 
               onClick={() => setShowImport(!showImport)}
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900/50 border border-slate-700 text-slate-400 text-[10px] font-bold tracking-widest hover:bg-slate-800 hover:text-white transition-all"
@@ -208,7 +209,6 @@ export default function StatsPage() {
             </button>
           </div>
 
-          {/* IMPORT INPUT FIELD (Hidden by default) */}
           {showImport && (
             <div className="animate-fade-in space-y-2 bg-black/50 p-3 rounded border border-slate-800">
               <p className="text-[10px] text-slate-500 uppercase">Paste System Code Below:</p>
@@ -228,7 +228,7 @@ export default function StatsPage() {
           )}
         </div>
 
-        {/* FACTORY RESET BUTTON */}
+        {/* FACTORY RESET */}
         <button
           onClick={() => {
             if (confirm("SYSTEM WARNING: This will wipe all player data permanently. Confirm?")) {
