@@ -3,12 +3,12 @@ import { createContext, useContext, useEffect, useState } from "react";
 const GameContext = createContext();
 
 export function GameProvider({ children }) {
-  // 1. DATA RESET FOR NEW LOGIC (Prevents "Grade E" bug)
+  // 1. DATA RESET FOR NEW LOGIC
   useEffect(() => {
     const version = localStorage.getItem("system_version");
-    if (version !== "v2_progressive_fixed") {
+    if (version !== "v2_progressive_fixed_dates") { // Updated Version Tag
       localStorage.clear();
-      localStorage.setItem("system_version", "v2_progressive_fixed");
+      localStorage.setItem("system_version", "v2_progressive_fixed_dates");
       window.location.reload();
     }
   }, []);
@@ -27,7 +27,7 @@ export function GameProvider({ children }) {
   });
 
   useEffect(() => {
-    // --- NEW LOGIC: Level 0 Start, +1500 Gap ---
+    // --- LEVEL LOGIC ---
     let currentLvl = 0;
     let cost = 1000;
     let accumulated = 0;
@@ -41,7 +41,7 @@ export function GameProvider({ children }) {
     setLevel(currentLvl);
     localStorage.setItem("system_xp", xp);
 
-    // --- NEW RANK LOGIC ---
+    // --- RANK LOGIC ---
     if (currentLvl >= 200) setRank("SSS");
     else if (currentLvl >= 150) setRank("SS");
     else if (currentLvl >= 120) setRank("S");
@@ -49,16 +49,14 @@ export function GameProvider({ children }) {
     else if (currentLvl >= 85) setRank("A");
     else if (currentLvl >= 70) setRank("B+");
     else if (currentLvl >= 60) setRank("B");
-    else if (currentLvl >= 52) setRank("C+");
-    else if (currentLvl >= 45) setRank("C");
-    else if (currentLvl >= 37) setRank("D+");
-    else if (currentLvl >= 30) setRank("D");
-    else if (currentLvl >= 25) setRank("E+");
-    else if (currentLvl >= 20) setRank("E");
-    else if (currentLvl >= 15) setRank("F+");
-    else if (currentLvl >= 10) setRank("F");
-    else if (currentLvl >= 5) setRank("NOOB");
-    else setRank("Beginer"); 
+    else if (currentLvl >= 49) setRank("C+");
+    else if (currentLvl >= 39) setRank("C");
+    else if (currentLvl >= 32) setRank("D+");
+    else if (currentLvl >= 25) setRank("D");
+    else if (currentLvl >= 18) setRank("E+");
+    else if (currentLvl >= 12) setRank("E");
+    else if (currentLvl >= 5) setRank("F+");
+    else setRank("F"); 
 
   }, [xp]);
 
@@ -69,18 +67,24 @@ export function GameProvider({ children }) {
   const addPoints = (amount) => {
     if (!amount) return;
     setXp((prev) => prev + amount);
-    const today = new Date().toISOString().slice(0, 10);
+    
+    // FIX: Use LOCAL time for keys to match the Graph
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const localKey = `${year}-${month}-${day}`;
+
     setDailyXpLog((prev) => ({
       ...prev,
-      [today]: (prev[today] || 0) + amount,
+      [localKey]: (prev[localKey] || 0) + amount,
     }));
   };
 
-  // --- UPDATED: NOW RETURNS REAL DATE LABELS ---
   const getMonthlyData = () => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth(); // 0-indexed (0 = Jan)
+    const month = date.getMonth(); 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
     const data = [];
@@ -89,13 +93,13 @@ export function GameProvider({ children }) {
       const monthStr = (month + 1).toString().padStart(2, '0');
       const key = `${year}-${monthStr}-${dayStr}`;
       
-      // Create a real date object to format the label (e.g., "Jan 14")
+      // Create Label: "Jan 1"
       const dateObj = new Date(year, month, day);
       const label = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
       data.push({
-        day: day,        // ID for React keys
-        label: label,    // "Jan 1"
+        day: day,
+        label: label, 
         xp: dailyXpLog[key] || 0
       });
     }
