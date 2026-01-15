@@ -44,19 +44,21 @@ export function GameProvider({ children }) {
     // --- RANK LOGIC ---
     if (currentLvl >= 200) setRank("SSS");
     else if (currentLvl >= 150) setRank("SS");
-    else if (currentLvl >= 120) setRank("S");
+    else if (currentLvl >= 120) setRank("S");  
     else if (currentLvl >= 100) setRank("A+");
     else if (currentLvl >= 85) setRank("A");
     else if (currentLvl >= 70) setRank("B+");
     else if (currentLvl >= 60) setRank("B");
-    else if (currentLvl >= 49) setRank("C+");
-    else if (currentLvl >= 39) setRank("C");
-    else if (currentLvl >= 32) setRank("D+");
-    else if (currentLvl >= 25) setRank("D");
-    else if (currentLvl >= 18) setRank("E+");
-    else if (currentLvl >= 12) setRank("E");
-    else if (currentLvl >= 5) setRank("F+");
-    else setRank("F"); 
+    else if (currentLvl >= 50) setRank("C+");
+    else if (currentLvl >= 40) setRank("C");
+    else if (currentLvl >= 35) setRank("D+");
+    else if (currentLvl >= 30) setRank("D");
+    else if (currentLvl >= 25) setRank("E+");
+    else if (currentLvl >= 20) setRank("E");
+    else if (currentLvl >= 15) setRank("F+");
+    else if (currentLvl >= 10) setRank("F");
+    else if (currentLvl >= 5) setRank("Noob");
+    else setRank("Beginner"); 
 
   }, [xp]);
 
