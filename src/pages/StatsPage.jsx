@@ -17,7 +17,7 @@ export default function StatsPage() {
 
   while (lvlIterator < level) {
     accumulatedXp += costIterator;
-    costIterator += 1500;    
+    costIterator += 375;    
     lvlIterator++;
   }
 
