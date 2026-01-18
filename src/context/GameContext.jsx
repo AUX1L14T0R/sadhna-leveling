@@ -35,7 +35,7 @@ export function GameProvider({ children }) {
     while (xp >= accumulated + cost) {
       accumulated += cost;
       currentLvl++;
-      cost += 1500;
+      cost += 375;
     }
 
     setLevel(currentLvl);
