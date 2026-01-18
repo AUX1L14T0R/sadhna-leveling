@@ -2,49 +2,67 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 const GameContext = createContext();
 
+// ===============================
+// PROGRESSION CONFIG (SOURCE OF TRUTH)
+// ===============================
+const BASE_XP = 1000;        // XP for level 0 → 1
+const XP_DIFFERENCE = 375;   // Increment per level (balanced)
+const MAX_LEVEL = 10000;
+
 export function GameProvider({ children }) {
-  // 1. DATA RESET FOR NEW LOGIC
+
+  // ===============================
+  // DATA RESET FOR NEW LOGIC
+  // ===============================
   useEffect(() => {
     const version = localStorage.getItem("system_version");
-    if (version !== "v2_progressive_fixed_dates") { // Updated Version Tag
+    if (version !== "v3_balanced_progression") {
       localStorage.clear();
-      localStorage.setItem("system_version", "v2_progressive_fixed_dates");
+      localStorage.setItem("system_version", "v3_balanced_progression");
       window.location.reload();
     }
   }, []);
 
+  // ===============================
+  // STATE
+  // ===============================
   const [xp, setXp] = useState(() => {
     const saved = localStorage.getItem("system_xp");
     return saved ? parseInt(saved, 10) : 0;
   });
 
-  const [level, setLevel] = useState(0); 
+  const [level, setLevel] = useState(0);
   const [rank, setRank] = useState("F");
-  
+
   const [dailyXpLog, setDailyXpLog] = useState(() => {
     const saved = localStorage.getItem("system_log");
     return saved ? JSON.parse(saved) : {};
   });
 
+  // ===============================
+  // LEVEL + RANK LOGIC
+  // ===============================
   useEffect(() => {
-    // --- LEVEL LOGIC ---
     let currentLvl = 0;
-    let cost = 1000;
+    let cost = BASE_XP;
     let accumulated = 0;
 
-    while (xp >= accumulated + cost) {
+    while (
+      currentLvl < MAX_LEVEL &&
+      xp >= accumulated + cost
+    ) {
       accumulated += cost;
       currentLvl++;
-      cost += 375;
+      cost += XP_DIFFERENCE;
     }
 
     setLevel(currentLvl);
     localStorage.setItem("system_xp", xp);
 
-    // --- RANK LOGIC ---
+    // -------- RANK LOGIC --------
     if (currentLvl >= 200) setRank("SSS");
     else if (currentLvl >= 150) setRank("SS");
-    else if (currentLvl >= 120) setRank("S");  
+    else if (currentLvl >= 120) setRank("S");
     else if (currentLvl >= 100) setRank("A+");
     else if (currentLvl >= 85) setRank("A");
     else if (currentLvl >= 70) setRank("B+");
@@ -58,59 +76,79 @@ export function GameProvider({ children }) {
     else if (currentLvl >= 15) setRank("F+");
     else if (currentLvl >= 10) setRank("F");
     else if (currentLvl >= 5) setRank("Noob");
-    else setRank("Beginner"); 
+    else setRank("Beginner");
 
   }, [xp]);
 
+  // ===============================
+  // PERSIST DAILY LOG
+  // ===============================
   useEffect(() => {
     localStorage.setItem("system_log", JSON.stringify(dailyXpLog));
   }, [dailyXpLog]);
 
+  // ===============================
+  // ADD XP
+  // ===============================
   const addPoints = (amount) => {
     if (!amount) return;
+
     setXp((prev) => prev + amount);
-    
-    // FIX: Use LOCAL time for keys to match the Graph
+
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const localKey = `${year}-${month}-${day}`;
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const key = `${year}-${month}-${day}`;
 
     setDailyXpLog((prev) => ({
       ...prev,
-      [localKey]: (prev[localKey] || 0) + amount,
+      [key]: (prev[key] || 0) + amount,
     }));
   };
 
+  // ===============================
+  // MONTHLY GRAPH DATA
+  // ===============================
   const getMonthlyData = () => {
     const date = new Date();
     const year = date.getFullYear();
-    const month = date.getMonth(); 
+    const month = date.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     const data = [];
     for (let day = 1; day <= daysInMonth; day++) {
-      const dayStr = day < 10 ? `0${day}` : day;
-      const monthStr = (month + 1).toString().padStart(2, '0');
+      const dayStr = String(day).padStart(2, "0");
+      const monthStr = String(month + 1).padStart(2, "0");
       const key = `${year}-${monthStr}-${dayStr}`;
-      
-      // Create Label: "Jan 1"
-      const dateObj = new Date(year, month, day);
-      const label = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      const label = new Date(year, month, day).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
 
       data.push({
-        day: day,
-        label: label, 
-        xp: dailyXpLog[key] || 0
+        day,
+        label,
+        xp: dailyXpLog[key] || 0,
       });
     }
     return data;
   };
 
+  // ===============================
+  // PROVIDER
+  // ===============================
   return (
     <GameContext.Provider
-      value={{ xp, level, rank, addPoints, dailyXpLog, getMonthlyData }}
+      value={{
+        xp,
+        level,
+        rank,
+        addPoints,
+        dailyXpLog,
+        getMonthlyData,
+      }}
     >
       {children}
     </GameContext.Provider>
