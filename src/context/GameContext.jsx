@@ -61,10 +61,18 @@ export function GameProvider({ children }) {
 
     // -------- RANK LOGIC --------
     if (currentLvl >= 200) setRank("SSS");
-    else if (currentLvl >= 150) setRank("SS");
-    else if (currentLvl >= 120) setRank("S");
-    else if (currentLvl >= 100) setRank("A+");
-    else if (currentLvl >= 85) setRank("A");
+    else if (currentLvl >= 170) setRank("SS");
+    else if (currentLvl >= 150) setRank("S");
+    else if (currentLvl >= 142) setRank("Conqueror'A+'");
+    else if (currentLvl >= 137) setRank("Crown'A+'");
+    else if (currentLvl >= 130) setRank("Ace'A+'");
+    else if (currentLvl >= 122) setRank("A+");
+    else if (currentLvl >= 115) setRank("Diamond 'A'");
+    else if (currentLvl >= 107) setRank("Platinum 'A'");
+    else if (currentLvl >= 100) setRank("A");
+    else if (currentLvl >= 92) setRank("Gold 'B'");
+    else if (currentLvl >= 85) setRank("Silver 'B'");
+    else if (currentLvl >= 77) setsetRank("Bronze 'B'");
     else if (currentLvl >= 70) setRank("B+");
     else if (currentLvl >= 60) setRank("B");
     else if (currentLvl >= 50) setRank("C+");
